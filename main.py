@@ -29,10 +29,8 @@ def home():
 def get_response():
     if client is None:
         return jsonify({"error": "Groq client is not initialized. Please check your API key."}), 500
-
     try:
         user_input = request.json['user_input']
-
         # Create chat completion
         chat_completion = client.chat.completions.create(
             messages=[
@@ -43,17 +41,19 @@ def get_response():
             ],
             model="mixtral-8x7b-32768",
         )
-
         # Get response content
         response = chat_completion.choices[0].message.content
-
         return jsonify({"response": response})
     except groq.GroqError as e:
         return jsonify({"error": f"Groq API error: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
 
+# Vercel serverless function handler
+def handler(event, context):
+    return app.wsgi_app(event, context)
+
 if __name__ == '__main__':
     if client is None:
         print("Warning: Application is running without a valid Groq client. API calls will fail.")
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
